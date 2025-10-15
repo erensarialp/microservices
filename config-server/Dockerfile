@@ -1,9 +1,17 @@
-FROM maven:3.9-eclipse-temurin-21
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
-WORKDIR /app
+WORKDIR /build
+
+COPY pom.xml ./
+
+RUN mvn -DskipTests dependency:purge-local-repository
 
 COPY . .
-RUN mvn dependency:purge-local-repository
+
 RUN mvn -U clean package -DskipTests
 
-ENTRYPOINT ["java","-jar","target/config-server-0.0.1-SNAPSHOT.jar"]
+FROM eclipse-temurin:21-jre AS runtime
+
+COPY --from=builder /build/target/*-SNAPSHOT.jar /app/app.jar
+
+ENTRYPOINT ["java","-jar","/app/app.jar"]
